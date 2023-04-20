@@ -1,4 +1,4 @@
-# difflogic - A Library for Differentiable Logic Gate Networks
+# difflogic - A Library for Differentiable Logic Gate Networks (no native CUDA version)
 
 ![difflogic_logo](difflogic_logo.png)
 
@@ -19,9 +19,7 @@ The library can be installed with:
 ```shell
 pip install difflogic
 ```
-> ⚠️ Note that `difflogic` requires CUDA, the CUDA Toolkit (for compilation), and `torch>=1.9.0` (matching the CUDA version).
-
-For additional installation support, see [INSTALLATION_SUPPORT.md](INSTALLATION_SUPPORT.md).
+> This forked version of `difflogic` does not require CUDA nor the CUDA Toolkit.
 
 ## 🌱 Intro and Training
 
@@ -56,7 +54,7 @@ layer = LogicLayer(
     in_dim=784,             # number of inputs
     out_dim=16_000,         # number of outputs
     device='cuda',          # the device (cuda / cpu)
-    implementation='cuda',  # the implementation to be used (native cuda / vanilla pytorch)
+    implementation='python',  # the implementation to be used (vanilla pytorch, native cuda not supported in this fork)
     connections='random',   # the method for the random initialization of the connections
     grad_factor=1.1,        # for deep models (>6 layers), the grad_factor should be increased (e.g., 2) to avoid vanishing gradients
 )
@@ -66,7 +64,7 @@ At this point, it is important to discuss the options for `device` and the provi
 `difflogic` provides two implementations (both of which work with PyTorch):
 
 * **`python`** the Python implementation is a substantially slower implementation that is easy to understand as it is implemented directly in Python with PyTorch and does not require any C++ / CUDA extensions. It is compatible with `device='cpu'` and `device='cuda'`.
-* **`cuda`** is a well-optimized implementation that runs natively on CUDA via custom extensions. This implementation is around 50 to 100 times faster than the python implementation (for large models). It only supports `device='cuda'`. 
+* **`cuda`** _not supported in this fork:_ is a well-optimized implementation that runs natively on CUDA via custom extensions. This implementation is around 50 to 100 times faster than the python implementation (for large models). It only supports `device='cuda'`. 
 
 To aggregate output neurons into a lower dimensional output space, we can use `GroupSum`, which aggregates a number of output neurons into 
 a `k` dimensional output, e.g., `k=10` for a 10-dimensional classification setting. 

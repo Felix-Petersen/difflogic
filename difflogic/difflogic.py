@@ -1,8 +1,8 @@
 import torch
-import difflogic_cuda
+# import difflogic_cuda
 import numpy as np
 from .functional import bin_op_s, get_unique_connections, GradFactor
-from .packbitstensor import PackBitsTensor
+# from .packbitstensor import PackBitsTensor
 
 
 ########################################################################################################################
@@ -16,9 +16,9 @@ class LogicLayer(torch.nn.Module):
             self,
             in_dim: int,
             out_dim: int,
-            device: str = 'cuda',
+            device: str = 'cpu',
             grad_factor: float = 1.,
-            implementation: str = None,
+            implementation: str = 'python',
             connections: str = 'random',
     ):
         """
@@ -43,11 +43,11 @@ class LogicLayer(torch.nn.Module):
         2. To provide a CPU implementation of differentiable logic gate networks 
         """
         self.implementation = implementation
-        if self.implementation is None and device == 'cuda':
-            self.implementation = 'cuda'
-        elif self.implementation is None and device == 'cpu':
-            self.implementation = 'python'
-        assert self.implementation in ['cuda', 'python'], self.implementation
+        # if self.implementation is None and device == 'cuda':
+        #     self.implementation = 'cuda'
+        # elif self.implementation is None and device == 'cpu':
+        #     self.implementation = 'python'
+        assert self.implementation in ['python'], (self.implementation, 'This version of difflogic does not support native CUDA and only the Python + PyTorch variant, use `python`. Still supports GPUs via high-level PyTorch.')
 
         self.connections = connections
         assert self.connections in ['random', 'unique'], self.connections
@@ -72,21 +72,22 @@ class LogicLayer(torch.nn.Module):
         self.num_weights = out_dim
 
     def forward(self, x):
-        if isinstance(x, PackBitsTensor):
-            assert not self.training, 'PackBitsTensor is not supported for the differentiable training mode.'
-            assert self.device == 'cuda', 'PackBitsTensor is only supported for CUDA, not for {}. ' \
-                                          'If you want fast inference on CPU, please use CompiledDiffLogicModel.' \
-                                          ''.format(self.device)
+        # if isinstance(x, PackBitsTensor):
+        #     assert not self.training, 'PackBitsTensor is not supported for the differentiable training mode.'
+        #     assert self.device == 'cuda', 'PackBitsTensor is only supported for CUDA, not for {}. ' \
+        #                                   'If you want fast inference on CPU, please use CompiledDiffLogicModel.' \
+        #                                   ''.format(self.device)
 
-        else:
-            if self.grad_factor != 1.:
-                x = GradFactor.apply(x, self.grad_factor)
+        # else:
+        if self.grad_factor != 1.:
+            x = GradFactor.apply(x, self.grad_factor)
 
-        if self.implementation == 'cuda':
-            if isinstance(x, PackBitsTensor):
-                return self.forward_cuda_eval(x)
-            return self.forward_cuda(x)
-        elif self.implementation == 'python':
+        # if self.implementation == 'cuda':
+        #     if isinstance(x, PackBitsTensor):
+        #         return self.forward_cuda_eval(x)
+        #     return self.forward_cuda(x)
+        # el
+        if self.implementation == 'python':
             return self.forward_python(x)
         else:
             raise ValueError(self.implementation)
@@ -107,46 +108,46 @@ class LogicLayer(torch.nn.Module):
             x = bin_op_s(a, b, weights)
         return x
 
-    def forward_cuda(self, x):
-        if self.training:
-            assert x.device.type == 'cuda', x.device
-        assert x.ndim == 2, x.ndim
+    # def forward_cuda(self, x):
+    #     if self.training:
+    #         assert x.device.type == 'cuda', x.device
+    #     assert x.ndim == 2, x.ndim
 
-        x = x.transpose(0, 1)
-        x = x.contiguous()
+    #     x = x.transpose(0, 1)
+    #     x = x.contiguous()
 
-        assert x.shape[0] == self.in_dim, (x.shape, self.in_dim)
+    #     assert x.shape[0] == self.in_dim, (x.shape, self.in_dim)
 
-        a, b = self.indices
+    #     a, b = self.indices
 
-        if self.training:
-            w = torch.nn.functional.softmax(self.weights, dim=-1).to(x.dtype)
-            return LogicLayerCudaFunction.apply(
-                x, a, b, w, self.given_x_indices_of_y_start, self.given_x_indices_of_y
-            ).transpose(0, 1)
-        else:
-            w = torch.nn.functional.one_hot(self.weights.argmax(-1), 16).to(x.dtype)
-            with torch.no_grad():
-                return LogicLayerCudaFunction.apply(
-                    x, a, b, w, self.given_x_indices_of_y_start, self.given_x_indices_of_y
-                ).transpose(0, 1)
+    #     if self.training:
+    #         w = torch.nn.functional.softmax(self.weights, dim=-1).to(x.dtype)
+    #         return LogicLayerCudaFunction.apply(
+    #             x, a, b, w, self.given_x_indices_of_y_start, self.given_x_indices_of_y
+    #         ).transpose(0, 1)
+    #     else:
+    #         w = torch.nn.functional.one_hot(self.weights.argmax(-1), 16).to(x.dtype)
+    #         with torch.no_grad():
+    #             return LogicLayerCudaFunction.apply(
+    #                 x, a, b, w, self.given_x_indices_of_y_start, self.given_x_indices_of_y
+    #             ).transpose(0, 1)
 
-    def forward_cuda_eval(self, x: PackBitsTensor):
-        """
-        WARNING: this is an in-place operation.
+    # def forward_cuda_eval(self, x: PackBitsTensor):
+    #     """
+    #     WARNING: this is an in-place operation.
 
-        :param x:
-        :return:
-        """
-        assert not self.training
-        assert isinstance(x, PackBitsTensor)
-        assert x.t.shape[0] == self.in_dim, (x.t.shape, self.in_dim)
+    #     :param x:
+    #     :return:
+    #     """
+    #     assert not self.training
+    #     assert isinstance(x, PackBitsTensor)
+    #     assert x.t.shape[0] == self.in_dim, (x.t.shape, self.in_dim)
 
-        a, b = self.indices
-        w = self.weights.argmax(-1).to(torch.uint8)
-        x.t = difflogic_cuda.eval(x.t, a, b, w)
+    #     a, b = self.indices
+    #     w = self.weights.argmax(-1).to(torch.uint8)
+    #     x.t = difflogic_cuda.eval(x.t, a, b, w)
 
-        return x
+    #     return x
 
     def extra_repr(self):
         return '{}, {}, {}'.format(self.in_dim, self.out_dim, 'train' if self.training else 'eval')
@@ -202,23 +203,23 @@ class GroupSum(torch.nn.Module):
 ########################################################################################################################
 
 
-class LogicLayerCudaFunction(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x, a, b, w, given_x_indices_of_y_start, given_x_indices_of_y):
-        ctx.save_for_backward(x, a, b, w, given_x_indices_of_y_start, given_x_indices_of_y)
-        return difflogic_cuda.forward(x, a, b, w)
+# class LogicLayerCudaFunction(torch.autograd.Function):
+#     @staticmethod
+#     def forward(ctx, x, a, b, w, given_x_indices_of_y_start, given_x_indices_of_y):
+#         ctx.save_for_backward(x, a, b, w, given_x_indices_of_y_start, given_x_indices_of_y)
+#         return difflogic_cuda.forward(x, a, b, w)
 
-    @staticmethod
-    def backward(ctx, grad_y):
-        x, a, b, w, given_x_indices_of_y_start, given_x_indices_of_y = ctx.saved_tensors
-        grad_y = grad_y.contiguous()
+#     @staticmethod
+#     def backward(ctx, grad_y):
+#         x, a, b, w, given_x_indices_of_y_start, given_x_indices_of_y = ctx.saved_tensors
+#         grad_y = grad_y.contiguous()
 
-        grad_w = grad_x = None
-        if ctx.needs_input_grad[0]:
-            grad_x = difflogic_cuda.backward_x(x, a, b, w, grad_y, given_x_indices_of_y_start, given_x_indices_of_y)
-        if ctx.needs_input_grad[3]:
-            grad_w = difflogic_cuda.backward_w(x, a, b, grad_y)
-        return grad_x, None, None, grad_w, None, None, None
+#         grad_w = grad_x = None
+#         if ctx.needs_input_grad[0]:
+#             grad_x = difflogic_cuda.backward_x(x, a, b, w, grad_y, given_x_indices_of_y_start, given_x_indices_of_y)
+#         if ctx.needs_input_grad[3]:
+#             grad_w = difflogic_cuda.backward_w(x, a, b, grad_y)
+#         return grad_x, None, None, grad_w, None, None, None
 
 
 ########################################################################################################################

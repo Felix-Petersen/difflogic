@@ -12,7 +12,7 @@ from results_json import ResultsJSON
 
 import mnist_dataset
 import uci_datasets
-from difflogic import LogicLayer, GroupSum, PackBitsTensor, CompiledLogicNet
+from difflogic import LogicLayer, GroupSum, CompiledLogicNet
 
 torch.set_num_threads(1)
 
@@ -195,18 +195,18 @@ def eval(model, loader, mode):
     return res.item()
 
 
-def packbits_eval(model, loader):
-    orig_mode = model.training
-    with torch.no_grad():
-        model.eval()
-        res = np.mean(
-            [
-                (model(PackBitsTensor(x.to('cuda').round().bool())).argmax(-1) == y.to('cuda')).to(torch.float32).mean().item()
-                for x, y in loader
-            ]
-        )
-        model.train(mode=orig_mode)
-    return res.item()
+# def packbits_eval(model, loader):
+#     orig_mode = model.training
+#     with torch.no_grad():
+#         model.eval()
+#         res = np.mean(
+#             [
+#                 (model(PackBitsTensor(x.to('cuda').round().bool())).argmax(-1) == y.to('cuda')).to(torch.float32).mean().item()
+#                 for x, y in loader
+#             ]
+#         )
+#         model.train(mode=orig_mode)
+#     return res.item()
 
 
 if __name__ == '__main__':
@@ -309,10 +309,10 @@ if __name__ == '__main__':
                 'test_acc_train_mode': test_accuracy_train_mode,
             }
 
-            if args.packbits_eval:
-                r['train_acc_eval'] = packbits_eval(model, train_loader)
-                r['valid_acc_eval'] = packbits_eval(model, train_loader)
-                r['test_acc_eval'] = packbits_eval(model, test_loader)
+#             if args.packbits_eval:
+#                 r['train_acc_eval'] = packbits_eval(model, train_loader)
+#                 r['valid_acc_eval'] = packbits_eval(model, train_loader)
+#                 r['test_acc_eval'] = packbits_eval(model, test_loader)
 
             if args.experiment_id is not None:
                 results.store_results(r)

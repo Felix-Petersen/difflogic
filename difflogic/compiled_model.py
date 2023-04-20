@@ -284,7 +284,7 @@ void apply_logic_gate_net (bool const *inp, {BITS_TO_DTYPE[32]} *out, size_t len
                             "-shared",
                             "-fPIC",
                             "-O{}".format(opt_level),
-                            "-march=native",
+                            # "-march=native",  # removed for compatibility with Apple Silicon: https://stackoverflow.com/questions/65966969/why-does-march-native-not-work-on-apple-m1
                             "-o",
                             lib_file.name,
                             c_file.name,

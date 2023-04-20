@@ -6,7 +6,7 @@ with open('README.md', 'r', encoding='utf-8') as fh:
 
 setup(
     name='difflogic',
-    version='0.1.0.cpu',
+    version='0.1.0c',
     author='Felix Petersen',
     author_email='ads0600@felix-petersen.de',
     long_description=long_description,

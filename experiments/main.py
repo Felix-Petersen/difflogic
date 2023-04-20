@@ -158,7 +158,7 @@ def get_model(args):
             'total_num_weights': total_num_weights,
         })
 
-    model = model.to('cuda')
+    model = model.to('cpu')
 
     print(model)
     if args.experiment_id is not None:
@@ -187,7 +187,7 @@ def eval(model, loader, mode):
         model.train(mode=mode)
         res = np.mean(
             [
-                (model(x.to('cuda').round()).argmax(-1) == y.to('cuda')).to(torch.float32).mean().item()
+                (model(x.to('cpu').round()).argmax(-1) == y.to('cpu')).to(torch.float32).mean().item()
                 for x, y in loader
             ]
         )
@@ -230,7 +230,7 @@ if __name__ == '__main__':
     parser.add_argument('--learning-rate', '-lr', type=float, default=0.01, help='learning rate (default: 0.01)')
     parser.add_argument('--training-bit-count', '-c', type=int, default=32, help='training bit count (default: 32)')
 
-    parser.add_argument('--implementation', type=str, default='cuda', choices=['cuda', 'python'],
+    parser.add_argument('--implementation', type=str, default='python', choices=['cuda', 'python'],
                         help='`cuda` is the fast CUDA implementation and `python` is simpler but much slower '
                         'implementation intended for helping with the understanding.')
 
@@ -282,8 +282,8 @@ if __name__ == '__main__':
             desc='iteration',
             total=args.num_iterations,
     ):
-        x = x.to(BITS_TO_TORCH_FLOATING_POINT_TYPE[args.training_bit_count]).to('cuda')
-        y = y.to('cuda')
+        x = x.to(BITS_TO_TORCH_FLOATING_POINT_TYPE[args.training_bit_count]).to('cpu')
+        y = y.to('cpu')
 
         loss = train(model, x, y, loss_fn, optim)
 

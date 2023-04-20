@@ -190,8 +190,8 @@ class GroupSum(torch.nn.Module):
         self.device = device
 
     def forward(self, x):
-        if isinstance(x, PackBitsTensor):
-            return x.group_sum(self.k)
+#         if isinstance(x, PackBitsTensor):
+#             return x.group_sum(self.k)
 
         assert x.shape[-1] % self.k == 0, (x.shape, self.k)
         return x.reshape(*x.shape[:-1], self.k, x.shape[-1] // self.k).sum(-1) / self.tau

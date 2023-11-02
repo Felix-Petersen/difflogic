@@ -19,3 +19,10 @@ class PackBitsTensor:
     def group_sum(self, k):
         assert self.device == 'cuda', self.device
         return difflogic_cuda.groupbitsum(self.t, self.pad_len, k)
+
+    def flatten(self, start_dim=0, end_dim=-1, **kwargs):
+        """
+        Returns the PackBitsTensor object itself.
+        Arguments are ignored.
+        """
+        return self

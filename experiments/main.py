@@ -201,7 +201,8 @@ def packbits_eval(model, loader):
         model.eval()
         res = np.mean(
             [
-                (model(PackBitsTensor(x.to('cuda').round().bool())).argmax(-1) == y.to('cuda')).to(torch.float32).mean().item()
+                (model(PackBitsTensor(x.to('cuda').reshape(x.shape[0], -1).round().bool())).argmax(-1) == y.to(
+                    'cuda')).to(torch.float32).mean().item()
                 for x, y in loader
             ]
         )

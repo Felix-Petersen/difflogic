@@ -697,7 +697,7 @@ __global__ void tensor_packbits_cuda_kernel(
     ) {
         for (  // batch in b
             auto col = blockIdx.x * blockDim.x + threadIdx.x;
-            col < t.size(1);
+            col < b.size(1);
             col += blockDim.x * gridDim.x
         ) {
 
@@ -709,8 +709,11 @@ __global__ void tensor_packbits_cuda_kernel(
             constexpr int bit_count = std::numeric_limits<unsigned_scalar_t>::digits;
             val.signed_scalar = b[row][col];
             for (unsigned int i = 0; i < bit_count; ++i) {
-                const unsigned_scalar_t bit_mask = static_cast<unsigned_scalar_t>(t[row][bit_count * col + i]) << i;
-                val.unsigned_scalar = val.unsigned_scalar | bit_mask;
+                const auto t_col = bit_count * col + i;
+                if (t_col < t.size(1)) {    
+                    const unsigned_scalar_t bit_mask = static_cast<unsigned_scalar_t>(t[row][t_col]) << i;
+                    val.unsigned_scalar = val.unsigned_scalar | bit_mask;
+                }
             }
             b[row][col] = val.signed_scalar;
         }
